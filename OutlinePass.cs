@@ -17,6 +17,8 @@ namespace Modules.Rendering.Outline
         public float Thickness = 1;
         public float OutlineIntensity = 1;
 
+        public static List<Renderer> OutlineRenderers = new List<Renderer>();
+
         // To make sure the shader will ends up in the build, we keep it's reference in the custom pass
         [SerializeField, HideInInspector] private Shader OutlineShader;
 
@@ -39,7 +41,17 @@ namespace Modules.Rendering.Outline
         protected override void Execute(CustomPassContext CTX)
         {
             CoreUtils.SetRenderTarget(CTX.cmd, OutlineBuffer, ClearFlag.Color);
+
+            OutlineRenderers.ForEach((Renderer =>
+            {
+                for (int i = 0; i < Renderer.sharedMaterials.Length; i++)
+                {
+                    CTX.cmd.DrawRenderer(Renderer, Renderer.sharedMaterials[i], i);
+                }
+            }));
+            
             CustomPassUtils.DrawRenderers(CTX, OutlineLayer);
+
 
             CTX.propertyBlock.SetColor("OutlineColor", OutlineColor);
             CTX.propertyBlock.SetTexture("OutlineBuffer", OutlineBuffer);
@@ -47,17 +59,8 @@ namespace Modules.Rendering.Outline
             CTX.propertyBlock.SetFloat("Thickness", Thickness);
             CTX.propertyBlock.SetFloat("OutlineIntensity", OutlineIntensity);
             CTX.propertyBlock.SetVector("TexelSize", OutlineBuffer.rt.texelSize);
-            List<float> Samples = new List<float>();
-            float STDev = Thickness * 0.5f;
-            for (int i = 0; i < 32; i++)
-            {
-                float STDev2 = STDev * STDev * 2;
-                float A = 1 / Mathf.Sqrt(Mathf.PI * STDev2);
-                float Gauss = A * Mathf.Pow((float) Math.E, -i * i * STDev2);
-                Samples.Add(Gauss);
-            }
-            CTX.propertyBlock.SetFloatArray("GaussSamples",Samples);
-
+            
+            
             CoreUtils.DrawFullScreen(CTX.cmd, FullscreenOutline, CTX.cameraColorBuffer, shaderPassId: 0,
                 properties: CTX.propertyBlock);
         }
