@@ -7,3 +7,5 @@
 2: add a "OutlinePass" to it
 
 3: change to parameters to your needs
+
+4(Optional) add an "Outline Component" to any individual object you want to outline
